@@ -1,4 +1,4 @@
-function TimeoutTimer (parent) {
+function TimeoutTimer (id) {
     this.parent = null;
     this.id = id;
     this.isSchematic = false;
@@ -14,12 +14,6 @@ function TimeoutTimer (parent) {
 	}
     };
 
-    this.state = "IDLE";
-    this.entry = "IDLE";
-    this.exit  = "";   
-
-    this.sendSync = function () { kernel.send(this, {pin: "sync", data: true}) );
-
     /* 
        transition[0] == start ball to IDLE (default entry)
        transition[1] == IDLE to TIMING on "start"
@@ -30,12 +24,12 @@ function TimeoutTimer (parent) {
     */
 
     this.transitionArray = [
-	/* 0 */ () => { this.entry = "IDLE"; this.exit = ""; },
-	/* 1 */ () => { this.time = this.event.data; this.entry = "TIMING"; this.exit = "IDLE"; },
-        /* 2 */ () => { this.killTimer (); this.exit = "TIMING"; this.entry = "IDLE";},
-	/* 3 */ () => { kernel.send(this, {pin: "timeout", data: true}); this.exit = "TIMING";},
-	/* 4 */ () => { this.killTimer (); kernel.send (this, {pin: "sync", data: true}); },
-	/* 5 */ () => { this.exit = ""; this.entry = "IDLE"; }
+	/* 0 */ () => { this.entry = "IDLE"; },
+	/* 1 */ () => { this.time = this.event.data; this.entry = "TIMING"; },
+        /* 2 */ () => { this.killTimer (); this.entry = "IDLE";},
+	/* 3 */ () => { kernel.send(this, {pin: "timeout", data: true}); this.entry = "IDLE";},
+	/* 4 */ () => { this.killTimer (); this.entry = "TIMING"; },
+	/* 5 */ () => { this.entry = "IDLE"; }
     ];
 
     this.exitArray = {
@@ -48,19 +42,17 @@ function TimeoutTimer (parent) {
 	state : "TIMING", code: function () { this.startTimer (); this.state = "TIMING"; }
     };
 
-    this.transitionFunction = (n) => { this.transitionArray[n] && this.transitionArray[n](); };
-    this.exitFunction = () => {this.exitArray[this.exit] && this.exitArray[this.exit](); this.exit = "";};
-    this.entryFunction = () => {this.entryArray[this.entry] && this.entryArray[entry](); this.entry = "";};
+    this.transitionFunction = (n) => {
+	this.exitArray[this.state] && this.exitArray[this.exit]();
+	this.transitionArray[n] && this.transitionArray[n](); 
+	this.entryArray[this.state] && this.entryArray[state]();
+    };
 
+    this.state = "";
     this.transitionFunction (0); /* take default transition */
     
     this.react = function (AGevent) {
-
 	this.event = AGevent;
-	
-	this.exitFunction ();
-	this.entryFunction ();
-
 	switch (this.state) {
 	case "IDLE":
 	    switch (AGevent.pin) {
@@ -77,8 +69,12 @@ function TimeoutTimer (parent) {
 	    default:
 	    };
 	};
-	
-	this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true;})};
-	this.sendSync = () => { kernel.send (this, {pin: "sync", data: true;}) };
-	this.killTimer = () => {};
-	this.startTimer = () => { setTimeout, () => { this.react ({pin: "timeout", data: true;})};
+	this.event = null;
+    };
+    
+    this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true;})};
+    this.sendSync = () => { kernel.send (this, {pin: "sync", data: true;}) };
+    this.killTimer = () => {};
+    this.startTimer = () => { setTimeout, () => { this.react ({pin: "timeout", data: true;})}};
+
+};
