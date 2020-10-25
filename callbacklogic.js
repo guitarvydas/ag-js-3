@@ -1,77 +1,16 @@
-function CallbackLogic (id) {
-    // input pins = "file", "timeout"
-    // output pins = "good", "error" , "abort", "no response", "timer start", "timer stop"
+// input pins = "file", "timeout"
+// output pins = "good", "error" , "abort", "no response", "timer start", "timer stop"
 
-    // Interim version! This will be upgraded later!
-    // In this version, the timer code is moved out of CallbackLogic and into a separate part (TimeoutTimer)
-    
+// Interim version! This will be upgraded later!
+// This version is already hard-to-read.  Later, we will compile diagrams into this code...
+
+// In this version, the timer code is moved out of CallbackLogic and into a separate part (TimeoutTimer)
+//  see discussion in PDF file and drawing.drawio
+
+function CallbackLogic (id, name) {
     this.parent = null;
     this.id = id;
-    this.isSchematic = false;
-    this.inputQueue = [];
-    this.isReady = function () { return ( this.inputQueue.length > 0 ); };
-    this.hasInputs = function () {
-	return (0 < this.inputQueue.length);
-    };
-    this.consumeOneEventIfReady = function () {
-	if (this.isReady()) {
-	    var event = this.inputQueue.pop ();
-	    this.react (event);
-	}
-    };
-
-    this.var_timeout;
-    
-    this.react = function (AGevent) {
-	var reader;
-	// lots of gory details here
-	// we are at the interface between HTML (the O/S) and AG, so there are lots of details, by definition...
-	// we are converting HTML events into AG events...
-	if (AGevent.pin == "file") {
-	    // start the reader, set up callbacks, set timeout
-	    // (this is interim code and will be upgraded later, e.g. timer will
-	    //  moved to its own component)
-	    reader = new FileReader();
-	    reader.onload = e => { this.react ({pin: "fileOnload", 
-						data: {reader: reader, HTMLevent: e}}); };
-	    reader.onerror = e => { this.react ({pin: "fileOnerror", data: reader}); };
-	    reader.onabort = e => { this.react ({pin: "fileOnabort", data: reader}); };
-	    kernel.send(this, {pin: "timer start", data: 3000});
-	    reader.readAsText (AGevent.data);
-	} else if (AGevent.pin == "fileOnload") {
-	    clearTimeout(this.var_timeout);
-	    kernel.send(this, 
-			{pin: "good", 
-			 data: {filename: AGevent.data.HTMLevent.data, 
-				contents: AGevent.data.HTMLevent.target.result}});
-	    kernel.io();
-	} else if (AGevent.pin == "fileOnerror") {
-	    kernel.send(this, {pin: "timer stop", data: true});
-	    kernel.send(this, {pin: "error", data: reader});
-	    kernel.io();
-	} else if (AGevent.pin == "fileOnabort") {
-	    kernel.send(this, {pin: "timer stop", data: true});
-	    kernel.send(this, {pin: "abort", data: reader});
-	    kernel.io();
-	} else if (AGevent.pin == "timeout") {
-	    kernel.send(this, {pin: "timer stop", data: true});
-	    reader && reader.abort ();
-	    kernel.send(this, {pin: "no response", data: reader});
-	    kernel.io();
-	} else {
-	    kernel.send(this, {pin: "timer stop", data: true});
-	    reader && reader.abort ();
-	    kernel.send (this, {pin: "fatal", data: "event not understood by CallbackLogic part: " + AGevent.pin});
-	}
-    }; // default
-};
-
-
-
-
-function CallbackLogic (id) {
-    this.parent = null;
-    this.id = id;
+    if (name) { this.name = name } else { this.name = "CallbackLogic" };
     this.isSchematic = false;
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
@@ -88,9 +27,9 @@ function CallbackLogic (id) {
     this.transitionArray = [
 	/* 0 */ () => { this.entry = "IDLE"; },
 	/* 1 */ () => { this.entry = "TIMING"; },
-        /* 2 */ () => { this.entry = "WAIT FOR START";},
+        /* 2 */ () => { this.saveFile(); this.entry = "WAIT FOR START";},
 	/* 3 */ () => { this.display(); this.entry = "IDLE" },
-	/* 4 */ () => { this.entry = "WAIT FOR SYNC"; },
+	/* 4 */ () => { this.saveFile(); this.entry = "WAIT FOR SYNC"; },
 	/* 5 */ () => { this.entry = "IDLE"; },
 	/* 6 */ () => { this.entry = "IDLE"; },
 	/* 7 */ () => { this.entry = "IDLE"; }
@@ -99,7 +38,7 @@ function CallbackLogic (id) {
     this.exitArray = {
     };
 
-    this.entryArray {
+    this.entryArray = {
 	state : "IDLE", code: function () { this.sendStopTimer(); this.state = "IDLE"; },
 	state : "WAIT FOR ON", code: function () { this.setup (); this.state = "WAIT FOR ON"; }
     };
@@ -115,33 +54,43 @@ function CallbackLogic (id) {
     this.transitionFunction (0); /* take default transition */
     
     this.react = function (AGevent) {
+	kernel.debug (this, AGevent);
 	this.event = AGevent;
-	switch (this.state) {
-	case "IDLE":
-	    switch (AGevent.pin) {
-	    case "timer sync": this.transitionFunction (1); break;
-	    case "start": this.transitionFunction (4); break;
-	    default:
+	if (this.state ==  "IDLE") {
+	    if (AGevent.pin == "timer sync") {
+		this.transitionFunction (1);
+	    } else if (AGevent.pin == "file") {
+		this.transitionFunction (4);
+	    } else {
+		throw "INTERNAL ERROR";
 	    };
-	    break;
-	case "WAIT FOR START":
-	    switch (AGevent.pin) {
-	    case "start": this.transitionFunction (2); break;	
-	    default:
+	} else if (this.state == "WAIT FOR START") {
+	    if (AGevent.pin == "file") {
+		this.transitionFunction (2);
+	    } else {
+		throw "INTERNAL ERROR";
 	    };
-	case "WAIT FOR SYNC":
-	    switch (AGevent.pin) {
-	    case "start": this.transitionFunction (5); break;	
-	    default:
+	} else if (this.state == "WAIT FOR SYNC") {
+	    if (AGevent.pin == "file") {
+		this.transitionFunction (5);
+	    } else {
+		throw "INTERNAL ERROR";
 	    };
-	case "WAIT FOR ON":
-	    switch (AGevent.pin) {
-	    case "onload": this.transitionFunction (3); break;	
-	    case "onerror": this.transitionFunction (6); break;
-	    case "onabort": this.transitionFunction (7); break;
-	    case "timeout": this.transitionFunction (8); break;
-	    default:
+	} else if (this.state == "WAIT FOR ON") {
+	    if (AGevent.pin == "onload") {
+		this.transitionFunction (3);
+	    } else if (AGevent.pin == "onerror") {
+		this.transitionFunction (6);
+	    } else if (AGevent.pin == "onabort") {
+		this.transitionFunction (7);
+	    } else if (AGevent.pin == "timeout") {
+		this.transitionFunction (8);
+	    } else {
+		throw "INTERNAL ERROR";
 	    };
+	} else if (this.state == "") {
+	} else {
+	    throw "INTERNAL ERROR";
 	};
 	this.event = null;
     };
@@ -152,13 +101,16 @@ function CallbackLogic (id) {
 	this.reader.onerror = e => { this.react ({pin: "onerror", data: reader}); };
 	this.reader.onabort = e => { this.react ({pin: "onabort", data: reader}); };
 	kernel.send(this, {pin: "timer start", data: 3000});
-	this.reader.readAsText (AGevent.data);
+	this.reader.readAsText (this.file);
     };
-    this.sendStopTimer = () => { kernel.send (this, {pin: "timer stop", data: true;})};
-    this.sendDisplay = () => { kernel.send (this, {pin: "good", data: {filename: ???, contents: ???}})};
-    this.sendError = () => { kernel.send (this, {pin: "error", data: "ERROR";})};
-    this.sendAbort = () => { kernel.send (this, {pin: "abort", data: "ABORT";})};
-    this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true;})};
-    
+    this.sendStopTimer = () => { kernel.send (this, {pin: "timer stop", data: true})};
+    this.sendDisplay = () => { 
+	kernel.send (this, {pin: "good", 
+			    data: {filename: this.reader.value,
+				   contents: this.reader.target.result}})};
+    this.sendError = () => { kernel.send (this, {pin: "error", data: "ERROR"})};
+    this.sendAbort = () => { kernel.send (this, {pin: "abort", data: "ABORT"})};
+    this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true})};
+    this.saveFile = () => { this.file = this.event.data };
 };
 

@@ -1,9 +1,10 @@
 // inputs: "file descriptor"
 // output: none
 
-function Display (id) {
+function Display (id, name) {
     this.parent = null;
     this.id = id;
+    if (name) { this.name = name } else { this.name = "TimeoutTimer" };
     this.isSchematic = false;
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
@@ -18,6 +19,7 @@ function Display (id) {
     };
 
     this.react = function (AGevent) {
+	kernel.debug (this, AGevent);
 	if ("file descriptor" == AGevent.pin) {
 	    var filename = AGevent.data.filename;
 	    var contents = AGevent.data.contents;

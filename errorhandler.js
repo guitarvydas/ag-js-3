@@ -1,10 +1,11 @@
 // inputs: "in"
 // output: none
 
-function ErrorHandler (id) {
+function ErrorHandler (id, name) {
     this.parent = null;
     this.id = id;
     this.isSchematic = false;
+    if (name) { this.name = name } else { this.name = "ErrorHandler" };
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
     this.hasInputs = function () {
@@ -18,6 +19,7 @@ function ErrorHandler (id) {
     };
 
     this.react = function (AGevent) {
+	kernel.debug (this, AGevent);
 	if ("in" == AGevent.pin) {
 	    var data = AGevent.data;
 	    document.getElementById(id).innerHTML =

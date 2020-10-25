@@ -1,6 +1,7 @@
-function TimeoutTimer (id) {
+function TimeoutTimer (id, name) {
     this.parent = null;
     this.id = id;
+    if (name) { this.name = name } else { this.name = "TimeoutTimer" };
     this.isSchematic = false;
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
@@ -37,7 +38,7 @@ function TimeoutTimer (id) {
 	state : "TIMING", code: function () {}
     };
 
-    this.entryArray {
+    this.entryArray = {
 	state : "IDLE", code: function () { kernel.send (this, {pin: "sync", data: true}); this.state = "IDLE"; },
 	state : "TIMING", code: function () { this.startTimer (); this.state = "TIMING"; }
     };
@@ -52,29 +53,35 @@ function TimeoutTimer (id) {
     this.transitionFunction (0); /* take default transition */
     
     this.react = function (AGevent) {
+	kernel.debug (this, AGevent);
 	this.event = AGevent;
-	switch (this.state) {
-	case "IDLE":
-	    switch (AGevent.pin) {
-	    case "start": this.transitionFunction (1); break;
-	    case "stop": this.transitionFunction (5); break;
-	    default:
+	if (this.state == "IDLE") {
+	    if (AGevent.pin == "start") {
+		this.transitionFunction (1);
+	    } else if (AGevent.pin == "stop") {
+		this.transitionFunction (5);
+	    } else {
+		throw "INTERNAL ERROR";
 	    };
-	    break;
-	case "TIMING":
-	    switch (AGevent.pin) {
-	    case "stop": this.transitionFunction (2); break;
-	    case "timeout": this.transitionFunction (3); break;
-	    case "start": this.transitionFunction (4); break;
-	    default:
+	} else if (this.state == "TIMING") {
+	    if (AGevent.pin == "stop") {
+		this.transitionFunction (2);
+	    } else if (AGevent.pin == "timeout") {
+		this.transitionFunction (3);
+	    } else if (AGevent.pin == "start") {
+		this.transitionFunction (4);
+	    } else {
+		throw "INTERNAL ERROR";
 	    };
+	} else if (this.state == "") {
+	} else {
+	    throw "INTERNAL ERROR";
 	};
 	this.event = null;
     };
     
-    this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true;})};
-    this.sendSync = () => { kernel.send (this, {pin: "sync", data: true;}) };
+    this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true})};
+    this.sendSync = () => { kernel.send (this, {pin: "sync", data: true}) };
     this.killTimer = () => {};
-    this.startTimer = () => { setTimeout, () => { this.react ({pin: "timeout", data: true;})}};
-
+    this.startTimer = () => { setTimeout, () => { this.react ({pin: "timeout", data: true})}};
 };

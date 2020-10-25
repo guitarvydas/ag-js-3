@@ -1,5 +1,6 @@
-function Schematic () {
+function Schematic (name) {
     this.isSchematic = true; 
+    if (name) { this.name = name } else { this.name = "Schematic" };
     this.inputQueue = []; 
     this.isBusy = function () { return this.parts.some(isBusy); };
     this.isReady = function () { 
@@ -20,6 +21,7 @@ function Schematic () {
     this.consumeOneEventIfReady = function () {
 	this.parts.forEach(p => p.consumeOneEventIfReady());
 	if (this.isReady()) {
+	    console.log("schematic consume");
 	    var event = this.inputQueue.pop ();
 	    this.react (event);
 	}

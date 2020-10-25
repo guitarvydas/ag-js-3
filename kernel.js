@@ -59,5 +59,9 @@ function Kernel (top) {
 	    this.topPart.consumeOneEventIfReady();
 	}
     };
+
+    this.debug = function (part, event) {
+	console.log (part.name + " <-- " + event.pin);
+    };
 };
 

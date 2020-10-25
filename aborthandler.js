@@ -1,9 +1,10 @@
 // inputs: "in"
 // output: none
 
-function AbortHandler (id) {
+function AbortHandler (id, name) {
     this.parent = null;
     this.id = id;
+    if (name) { this.name = name } else { this.name = "ErrorHandler" };
     this.isSchematic = false;
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
@@ -18,6 +19,7 @@ function AbortHandler (id) {
     };
 
     this.react = function (AGevent) {
+	kernel.debug (this, AGevent);
 	if ("in" == AGevent.pin) {
 	    var data = AGevent.data;
 	    document.getElementById(id).innerHTML =

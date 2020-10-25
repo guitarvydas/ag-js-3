@@ -7,9 +7,10 @@
 // special: JS calls "react()" to invoke the part
 //
 
-function FileSelector (id) {
+function FileSelector (id, name) {
     this.parent = null;
     this.id = id;
+    if (name) { this.name = name } else { this.name = "FileSelector" };
     this.isSchematic = false;
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
@@ -26,6 +27,7 @@ function FileSelector (id) {
 
     this.react = function () { // called from JS, hence, no parameters
         var fileDescriptor = document.getElementById(this.id).files[0];
+	kernel.debug (this, "");
         kernel.send (this, {pin: 'changed', data: fileDescriptor});
         kernel.io ();
     };
