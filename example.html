@@ -6,6 +6,7 @@
     <script src="./schematic.js"></script>
     <script src="./fileselector.js"></script>
     <script src="./callbacklogic.js"></script>
+    <script src="./timeouttimer.js"></script>
     <script src="./display.js"></script>
     <script src="./errorhandler.js"></script>
     <script src="./aborthandler.js"></script>
@@ -63,15 +64,35 @@
 	    new Wire ({ sender: {part: var_CallbackLogic, pin: "no response"},
 			receivers: [{part: var_NoResponseHandler, pin: "in"}]});
       </script>
+
+      <script>
+	var var_TimeoutTimer = new TimeoutTimer ("timeout timer");
+	var wireTimeoutStart =
+	    new Wire ({ sender: {part: var_CallbackLogic, pin: "timer start"},
+			receivers: [{part: var_TimeoutTimer, pin: "start"}]});
+	var wireTimeoutStop =
+	    new Wire ({ sender: {part: var_CallbackLogic, pin: "timer stop"},
+			receivers: [{part: var_TimeoutTimer, pin: "stop"}]});
+	var wireTimeout =
+	    new Wire ({ sender: {part: var_TimeoutTimer, pin: "timeout"},
+			receivers: [{part: var_CallbackLogic, pin: "timeout"}]});
+	var wireTimeoutSync =
+	    new Wire ({ sender: {part: var_TimeoutTimer, pin: "sync"},
+			receivers: [{part: var_CallbackLogic, pin: "timer sync"}]});
+      </script>
       
       <script>
 	
 	// initialization of var_topLevel part
-	var_topLevel.initializeParts( [var_FileSelector, var_Display, var_CallbackLogic, var_ErrorHandler, var_AbortHandler, var_NoResponseHandler] );
+	var_topLevel.initializeParts( [var_FileSelector, var_Display, var_CallbackLogic, var_TimeoutTimer, var_ErrorHandler, var_AbortHandler, var_NoResponseHandler] );
 
 	var_topLevel.initializeWires ([
 	    wireFromFileSelectorToCallbackLogic,
 	    wireFromCallbackLogicToDisplay,
+	    wireTimeoutStart,
+	    wireTimeoutStop,
+	    wireTimeout,
+	    wireTimeoutSync,
 	    wireFromCallbackLogicToErrorHandler,
 	    wireFromCallbackLogicToAbortHandler,
 	    wireFromCallbackLogicToNoResponseHandler

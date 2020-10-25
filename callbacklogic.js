@@ -1,12 +1,9 @@
 function CallbackLogic (id) {
-    // input pins = "file"                            // ("timeout" will be added later)
-    // output pins = "good", "error" , "abort", "no response", "fatal"
+    // input pins = "file", "timeout"
+    // output pins = "good", "error" , "abort", "no response", "timer start", "timer stop"
 
     // Interim version! This will be upgraded later!
-    // In this version, the timer code is conflated with the Callbacklogic code,
-    //   but, the timer should be a separate part.
-
-    // N.B. note the absence of "throw"... (not needed, throw is just another form of data transfer)
+    // In this version, the timer code is moved out of CallbackLogic and into a separate part (TimeoutTimer)
     
     this.parent = null;
     this.id = id;
@@ -39,9 +36,7 @@ function CallbackLogic (id) {
 						data: {reader: reader, HTMLevent: e}}); };
 	    reader.onerror = e => { this.react ({pin: "fileOnerror", data: reader}); };
 	    reader.onabort = e => { this.react ({pin: "fileOnabort", data: reader}); };
-	    this.var_timeout = setTimeout(
-		() => { this.react ({pin: "timeout", data: reader});},
-		1000);
+	    kernel.send(this, {pin: "timer start", data: 3000});
 	    reader.readAsText (AGevent.data);
 	} else if (AGevent.pin == "fileOnload") {
 	    clearTimeout(this.var_timeout);
@@ -51,20 +46,20 @@ function CallbackLogic (id) {
 				contents: AGevent.data.HTMLevent.target.result}});
 	    kernel.io();
 	} else if (AGevent.pin == "fileOnerror") {
-	    clearTimeout(this.var_timeout);
+	    kernel.send(this, {pin: "timer stop", data: true});
 	    kernel.send(this, {pin: "error", data: reader});
 	    kernel.io();
 	} else if (AGevent.pin == "fileOnabort") {
-	    clearTimeout(this.var_timeout);
+	    kernel.send(this, {pin: "timer stop", data: true});
 	    kernel.send(this, {pin: "abort", data: reader});
 	    kernel.io();
 	} else if (AGevent.pin == "timeout") {
-	    clearTimeout(this.var_timeout);
+	    kernel.send(this, {pin: "timer stop", data: true});
 	    reader && reader.abort ();
 	    kernel.send(this, {pin: "no response", data: reader});
 	    kernel.io();
 	} else {
-	    clearTimeout(this.var_timeout); 
+	    kernel.send(this, {pin: "timer stop", data: true});
 	    reader && reader.abort ();
 	    kernel.send (this, {pin: "fatal", data: "event not understood by CallbackLogic part: " + AGevent.pin});
 	}
