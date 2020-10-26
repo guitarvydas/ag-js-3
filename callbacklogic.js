@@ -40,7 +40,7 @@ function CallbackLogic (id, name) {
     this.exitCollection = [];
 
     this.entryCollection = [
-	{ state : "IDLE", func: () => { this.sendStopTimer(); this.state = "IDLE"; }},
+	{ state : "IDLE", func: () => { this.state = "IDLE"; }},
 	{ state : "WAIT FOR ON", func: () => { this.setup (); this.state = "WAIT FOR ON"; }}
     ];
 
