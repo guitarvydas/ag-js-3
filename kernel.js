@@ -28,8 +28,8 @@ function Wire (wobject) {
     };
 };
 
-function Kernel (top) {
-    this.topPart = top;
+function Kernel () {
+    this.topPart = null;
     this.allParts = [];
     this.findWire = function (schematic, senderPart, senderPin) {
 	var i;
@@ -61,7 +61,14 @@ function Kernel (top) {
     };
 
     this.debug = function (part, event) {
-	console.log (part.name + " <-- " + event.pin);
+	if (part.state) {
+	    console.log (part.name + " [" + part.state + "] <-- " + event.pin);
+	} else {
+	    console.log (part.name + " <-- " + event.pin);
+	}
     };
+
+    this.initilialize = (topPart) => { this.top = topPart; };
 };
+
 

@@ -11,6 +11,10 @@
     <script src="./errorhandler.js"></script>
     <script src="./aborthandler.js"></script>
     <script src="./noresponsehandler.js"></script>
+
+    <script>
+      var kernel = new Kernel ();
+    </script>
     
   </head>
 
@@ -81,6 +85,7 @@
 			receivers: [{part: var_CallbackLogic, pin: "timer sync"}]});
       </script>
       
+
       <script>
 	
 	// initialization of var_topLevel part
@@ -99,9 +104,9 @@
 	]);
       </script>
 
-      <script>
-	var kernel = new Kernel (var_topLevel);
-      </script>
+    <script>
+      kernel.initialize (var_topLevel);
+    </script>
 
     </div>
   </body>

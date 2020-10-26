@@ -25,33 +25,35 @@ function TimeoutTimer (id, name) {
     */
 
     this.transitionArray = [
-	/* 0 */ () => { this.entry = "IDLE"; },
-	/* 1 */ () => { this.time = this.event.data; this.entry = "TIMING"; },
-        /* 2 */ () => { this.killTimer (); this.entry = "IDLE";},
-	/* 3 */ () => { kernel.send(this, {pin: "timeout", data: true}); this.entry = "IDLE";},
-	/* 4 */ () => { this.killTimer (); this.entry = "TIMING"; },
-	/* 5 */ () => { this.entry = "IDLE"; }
+	/* 0 */ () => { this.state = "IDLE"; },
+	/* 1 */ () => { this.time = this.event.data; this.state = "TIMING"; },
+        /* 2 */ () => { this.killTimer (); this.state = "IDLE";},
+	/* 3 */ () => { kernel.send(this, {pin: "timeout", data: true}); this.state = "IDLE";},
+	/* 4 */ () => { this.killTimer (); this.state = "TIMING"; },
+	/* 5 */ () => { this.state = "IDLE"; }
     ];
 
-    this.exitArray = {
-	state : "IDLE", code: function () {},
-	state : "TIMING", code: function () {}
-    };
+    this.exitCollection = [];
 
-    this.entryArray = {
-	state : "IDLE", code: function () { kernel.send (this, {pin: "sync", data: true}); this.state = "IDLE"; },
-	state : "TIMING", code: function () { this.startTimer (); this.state = "TIMING"; }
+    this.entryCollection = [
+	{ state : "IDLE", func: () => { kernel.send (this, {pin: "sync", data: true}); this.state = "IDLE"; }},
+	{ state : "TIMING", code: () => { this.startTimer (); this.state = "TIMING"; }}
+    ];
+
+    this.lookupAndCall = function (stateName, collection) {
+	for (var i = 0 ; i < collection.length ; i += 1) {
+	    if (stateName == collection[i].state) {
+		return collection[i].func();
+	    }
+	}
     };
 
     this.transitionFunction = (n) => {
-	this.exitArray[this.state] && this.exitArray[this.exit]();
+	this.lookupAndCall(this.state, this.exitCollection);
 	this.transitionArray[n] && this.transitionArray[n](); 
-	this.entryArray[this.state] && this.entryArray[state]();
+	this.lookupAndCall(this.state, this.entryCollection);
     };
 
-    this.state = "";
-    this.transitionFunction (0); /* take default transition */
-    
     this.react = function (AGevent) {
 	kernel.debug (this, AGevent);
 	this.event = AGevent;
@@ -73,7 +75,7 @@ function TimeoutTimer (id, name) {
 	    } else {
 		throw "INTERNAL ERROR";
 	    };
-	} else if (this.state == "") {
+	} else if (this.state == "-no-state-") {
 	} else {
 	    throw "INTERNAL ERROR";
 	};
@@ -84,4 +86,8 @@ function TimeoutTimer (id, name) {
     this.sendSync = () => { kernel.send (this, {pin: "sync", data: true}) };
     this.killTimer = () => {};
     this.startTimer = () => { setTimeout, () => { this.react ({pin: "timeout", data: true})}};
+
+    this.state = "-no-state-";
+    this.transitionFunction (0); /* take default transition */
+    
 };

@@ -25,34 +25,41 @@ function CallbackLogic (id, name) {
     };
 
     this.transitionArray = [
-	/* 0 */ () => { this.entry = "IDLE"; },
-	/* 1 */ () => { this.entry = "TIMING"; },
-        /* 2 */ () => { this.saveFile(); this.entry = "WAIT FOR START";},
-	/* 3 */ () => { this.display(); this.entry = "IDLE" },
-	/* 4 */ () => { this.saveFile(); this.entry = "WAIT FOR SYNC"; },
-	/* 5 */ () => { this.entry = "IDLE"; },
-	/* 6 */ () => { this.entry = "IDLE"; },
-	/* 7 */ () => { this.entry = "IDLE"; }
+	/* 0 */ () => { this.state = "IDLE"; },
+	/* 1 */ () => { this.state = "TIMING"; },
+        /* 2 */ () => { this.saveFile(); this.state = "WAIT FOR START";},
+	/* 3 */ () => { this.display(); this.state = "IDLE" },
+	/* 4 */ () => { this.saveFile(); this.state = "WAIT FOR SYNC"; },
+	/* 5 */ () => { this.state = "IDLE"; },
+	/* 6 */ () => { this.state = "IDLE"; },
+	/* 7 */ () => { this.state = "IDLE"; }
     ];
 
-    this.exitArray = {
-    };
+    this.exitCollection = [];
 
-    this.entryArray = {
-	state : "IDLE", code: function () { this.sendStopTimer(); this.state = "IDLE"; },
-	state : "WAIT FOR ON", code: function () { this.setup (); this.state = "WAIT FOR ON"; }
-    };
+    this.entryCollection = [
+	{ state : "IDLE", func: () => { this.sendStopTimer(); this.state = "IDLE"; }},
+	{ state : "WAIT FOR ON", func: () => { this.setup (); this.state = "WAIT FOR ON"; }}
+    ];
 
+    this.lookupAndCall = function (stateName, collection) {
+	for (var i = 0 ; i < collection.length ; i += 1) {
+	    console.log(collection[i].state);
+	    console.log(stateName);
+	    console.log(stateName == collection[i].state);
+	    console.log();
+	    if (stateName == collection[i].state) {
+		return collection[i].func();
+	    }
+	}
+    };
 
     this.transitionFunction = (n) => {
-	this.exitArray[this.state] && this.exitArray[this.exit]();
+	this.lookupAndCall(this.state, this.exitCollection);
 	this.transitionArray[n] && this.transitionArray[n](); 
-	this.entryArray[this.state] && this.entryArray[state]();
+	this.lookupAndCall(this.state, this.entryCollection);
     };
 
-    this.state = "";
-    this.transitionFunction (0); /* take default transition */
-    
     this.react = function (AGevent) {
 	kernel.debug (this, AGevent);
 	this.event = AGevent;
@@ -88,7 +95,7 @@ function CallbackLogic (id, name) {
 	    } else {
 		throw "INTERNAL ERROR";
 	    };
-	} else if (this.state == "") {
+	} else if (this.state == "-no-state-") {
 	} else {
 	    throw "INTERNAL ERROR";
 	};
@@ -112,5 +119,10 @@ function CallbackLogic (id, name) {
     this.sendAbort = () => { kernel.send (this, {pin: "abort", data: "ABORT"})};
     this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true})};
     this.saveFile = () => { this.file = this.event.data };
+
+    this.state = "-no-state-";
+    this.transitionFunction (0); /* take default transition */
+    
+
 };
 
