@@ -51,7 +51,7 @@ function Kernel () {
 	    var parentSchematic = part.parent;
 	    var outputWire = this.findWire (part.parent, part, outputPin);
 	    outputWire.deliver (outputData);
-	    console.log ("sent {" + part.name + ", " + outputPin + "}");
+	    // console.log ("sent {" + part.name + ", " + outputPin + "}");
 	} else {
 	    this.deferredEventQueue.push({part: part, event: outputEvent});
 	}
@@ -70,11 +70,11 @@ function Kernel () {
     };
 
     this.debug = function (part, event) {
-	if (part.state) {
-	    console.log (part.name + " [" + part.state + "] <-- " + event.pin);
-	} else {
-	    console.log (part.name + " <-- " + event.pin);
-	}
+	// if (part.state) {
+	//     console.log (part.name + " [" + part.state + "] <-- " + event.pin);
+	// } else {
+	//     console.log (part.name + " <-- " + event.pin);
+	// }
     };
 
     this.initialize = (topPart) => { 
