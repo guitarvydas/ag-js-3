@@ -6,7 +6,6 @@ function TimeoutTimer (id, name) {
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
     this.hasInputs = function () {
-	console.log("   timeout timer has inputs " + (0 < this.inputQueue.length));
 	return (0 < this.inputQueue.length);
     };
     this.consumeOneEventIfReady = function () {
@@ -26,13 +25,12 @@ function TimeoutTimer (id, name) {
     */
 
     this.transitionArray = [
-	/* 0 */ () => { this.state = "FIRST_TIME"; },
+	/* 0 */ () => { this.state = "IDLE"; },
 	/* 1 */ () => { this.time = this.event.data; this.state = "TIMING"; },
         /* 2 */ () => { this.killTimer (); this.state = "IDLE";},
 	/* 3 */ () => { kernel.send(this, {pin: "timeout", data: true}); this.state = "IDLE";},
 	/* 4 */ () => { this.killTimer (); this.state = "TIMING"; },
 	/* 5 */ () => { this.state = "IDLE"; },
-	/* 6 */ () => { this.state = "IDLE"; }
     ];
 
     this.exitCollection = [];
@@ -77,12 +75,6 @@ function TimeoutTimer (id, name) {
 	    } else {
 		throw "INTERNAL ERROR";
 	    };
-	} else if (this.state == "FIRST_TIME") {
-	    if (AGevent.pin == "stop") {
-		this.transitionFunction (6);
-	    } else {
-		throw "INTERNAL ERROR";
-	    }
 	} else if (this.state == "-no-state-") {
 	} else {
 	    throw "INTERNAL ERROR";

@@ -15,8 +15,6 @@ function Schematic (name) {
 	wire.deliver (data);	  
     };
     this.hasInputs = function () {
-	console.log ("   schematic inq len " + this.inputQueue.length);
-	console.log ("   .schematic.hasInputs " + ((0 < this.inputQueue.length) || this.parts.some(child => { return child.hasInputs() })));
 	return ((0 < this.inputQueue.length) || this.parts.some(child => { return child.hasInputs() }));
     };
     this.consumeOneEventIfReady = function () {

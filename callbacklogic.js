@@ -28,12 +28,13 @@ function CallbackLogic (id, name) {
 	/* 0 */ () => { this.state = "IDLE"; },
 	/* 1 */ () => { this.state = "WAIT FOR START"; },
         /* 2 */ () => { this.saveFile(); this.state = "WAIT FOR ON";},
-	/* 3 */ () => { this.sendDisplay(); this.state = "IDLE" },
+	/* 3 */ () => { this.sendStopTimer(); this.sendDisplay(); this.state = "IDLE" },
 	/* 4 */ () => { this.saveFile(); this.state = "WAIT FOR SYNC"; },
 	/* 5 */ () => { this.state = "TIMER SYNC"; },
-	/* 6 */ () => { this.sendError (); this.state = "IDLE"; },
-	/* 7 */ () => { this.sendAbort (); this.state = "IDLE"; },
-	/* 8 */ () => { this.sendTimeout (); this.state = "IDLE"; }
+	/* 6 */ () => { this.sendStopTimer(); this.sendError (); this.state = "IDLE"; },
+	/* 7 */ () => { this.sendStopTimer(); this.sendAbort (); this.state = "IDLE"; },
+	/* 8 */ () => { this.sendStopTimer(); this.sendTimeout (); this.state = "IDLE"; },
+	/* 9 */ () => { this.state = "IDLE"; }
     ];
 
     this.exitCollection = [];
@@ -51,6 +52,8 @@ function CallbackLogic (id, name) {
 		this.transitionFunction (1);
 	    } else if (AGevent.pin == "file") {
 		this.transitionFunction (4);
+	    } else if (AGevent.pin == "timeout") {
+		this.transitionFunction (9);
 	    } else {
 		throw "INTERNAL ERROR";
 	    };
@@ -126,10 +129,8 @@ function CallbackLogic (id, name) {
     this.enterState = function () { this.lookupAndCall(this.state, this.entryCollection); };
 
     this.transitionFunction = function (n) {
-	console.log("callback exits " + this.state);
 	this.exitState ();
 	this.makeTransition (n);
-	console.log("callback enters " + this.state);
 	this.enterState ();
     };
 

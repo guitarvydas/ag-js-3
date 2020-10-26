@@ -19,9 +19,7 @@ function Wire (wobject) {
 	    this.receivers.forEach(
 		function (r) {
 		    var pin = r.pin;
-		    console.log ("   deliver to " + pin);
 		    r.part.inputQueue.push ( {pin: pin, data: data} );
-		    console.log ("   inq len " + r.part.inputQueue.length);
 		})
 	    this.unlockReceivers ();
 	}
@@ -68,7 +66,6 @@ function Kernel () {
 		this.topPart.consumeOneEventIfReady();
 	    }
 	}
-	console.log ("  K exit dispatch");
     };
 
     this.debug = function (part, event) {
