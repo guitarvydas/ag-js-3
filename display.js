@@ -26,7 +26,7 @@ function Display (id, name) {
 	    var element = document.getElementById(this.id);
 	    document.getElementById(this.id).innerHTML =
 		"FILE REQUESTED: " + filename +
-		"<BR>FILE CONTENTS (example2):<BR>" + contents;
+		"<BR>FILE CONTENTS (example 3):<BR>" + contents;
 	}
     }; // default
 

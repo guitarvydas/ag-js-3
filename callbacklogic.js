@@ -26,13 +26,14 @@ function CallbackLogic (id, name) {
 
     this.transitionArray = [
 	/* 0 */ () => { this.state = "IDLE"; },
-	/* 1 */ () => { this.state = "TIMING"; },
-        /* 2 */ () => { this.saveFile(); this.state = "WAIT FOR START";},
-	/* 3 */ () => { this.display(); this.state = "IDLE" },
+	/* 1 */ () => { this.state = "WAIT FOR START"; },
+        /* 2 */ () => { this.saveFile(); this.state = "WAIT FOR ON";},
+	/* 3 */ () => { this.sendDisplay(); this.state = "IDLE" },
 	/* 4 */ () => { this.saveFile(); this.state = "WAIT FOR SYNC"; },
-	/* 5 */ () => { this.state = "IDLE"; },
-	/* 6 */ () => { this.state = "IDLE"; },
-	/* 7 */ () => { this.state = "IDLE"; }
+	/* 5 */ () => { this.state = "TIMER SYNC"; },
+	/* 6 */ () => { this.sendError (); this.state = "IDLE"; },
+	/* 7 */ () => { this.sendAbort (); this.state = "IDLE"; },
+	/* 8 */ () => { this.sendTimeout (); this.state = "IDLE"; }
     ];
 
     this.exitCollection = [];
@@ -41,24 +42,6 @@ function CallbackLogic (id, name) {
 	{ state : "IDLE", func: () => { this.sendStopTimer(); this.state = "IDLE"; }},
 	{ state : "WAIT FOR ON", func: () => { this.setup (); this.state = "WAIT FOR ON"; }}
     ];
-
-    this.lookupAndCall = function (stateName, collection) {
-	for (var i = 0 ; i < collection.length ; i += 1) {
-	    console.log(collection[i].state);
-	    console.log(stateName);
-	    console.log(stateName == collection[i].state);
-	    console.log();
-	    if (stateName == collection[i].state) {
-		return collection[i].func();
-	    }
-	}
-    };
-
-    this.transitionFunction = (n) => {
-	this.lookupAndCall(this.state, this.exitCollection);
-	this.transitionArray[n] && this.transitionArray[n](); 
-	this.lookupAndCall(this.state, this.entryCollection);
-    };
 
     this.react = function (AGevent) {
 	kernel.debug (this, AGevent);
@@ -86,10 +69,13 @@ function CallbackLogic (id, name) {
 	} else if (this.state == "WAIT FOR ON") {
 	    if (AGevent.pin == "onload") {
 		this.transitionFunction (3);
+		kernel.io ();
 	    } else if (AGevent.pin == "onerror") {
 		this.transitionFunction (6);
+		kernel.io ();
 	    } else if (AGevent.pin == "onabort") {
 		this.transitionFunction (7);
+		kernel.io ();
 	    } else if (AGevent.pin == "timeout") {
 		this.transitionFunction (8);
 	    } else {
@@ -108,21 +94,50 @@ function CallbackLogic (id, name) {
 	this.reader.onerror = e => { this.react ({pin: "onerror", data: reader}); };
 	this.reader.onabort = e => { this.react ({pin: "onabort", data: reader}); };
 	kernel.send(this, {pin: "timer start", data: 3000});
-	this.reader.readAsText (this.file);
+	this.reader.readAsText (this.filedescriptor);
     };
     this.sendStopTimer = () => { kernel.send (this, {pin: "timer stop", data: true})};
-    this.sendDisplay = () => { 
+    this.sendDisplay = () => {
+	let fname = this.filename;
 	kernel.send (this, {pin: "good", 
-			    data: {filename: this.reader.value,
-				   contents: this.reader.target.result}})};
+			    data: {filename: fname,
+				   contents: this.reader.result}})};
     this.sendError = () => { kernel.send (this, {pin: "error", data: "ERROR"})};
     this.sendAbort = () => { kernel.send (this, {pin: "abort", data: "ABORT"})};
     this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true})};
-    this.saveFile = () => { this.file = this.event.data };
+    this.saveFile = () => { 
+	this.filename = this.event.data.name ;
+	this.filedescriptor = this.event.data.descriptor ; 
+    };
 
+
+    //////
+    // implementation details...
+    //////
+    this.lookupAndCall = function (stateName, collection) {
+	for (var i = 0 ; i < collection.length ; i += 1) {
+	    if (stateName == collection[i].state) {
+		return collection[i].func();
+	    }
+	}
+    };
+    this.exitState = function () { this.lookupAndCall(this.state, this.exitCollection); };
+    this.makeTransition = function (n) { this.transitionArray[n] && this.transitionArray[n](); };
+    this.enterState = function () { this.lookupAndCall(this.state, this.entryCollection); };
+
+    this.transitionFunction = function (n) {
+	console.log("callback exits " + this.state);
+	this.exitState ();
+	this.makeTransition (n);
+	console.log("callback enters " + this.state);
+	this.enterState ();
+    };
+
+    //////
+    // init
+    //////
     this.state = "-no-state-";
     this.transitionFunction (0); /* take default transition */
-    
 
 };
 

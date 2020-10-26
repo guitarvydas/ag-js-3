@@ -6,6 +6,7 @@ function TimeoutTimer (id, name) {
     this.inputQueue = [];
     this.isReady = function () { return ( this.inputQueue.length > 0 ); };
     this.hasInputs = function () {
+	console.log("   timeout timer has inputs " + (0 < this.inputQueue.length));
 	return (0 < this.inputQueue.length);
     };
     this.consumeOneEventIfReady = function () {
@@ -25,19 +26,20 @@ function TimeoutTimer (id, name) {
     */
 
     this.transitionArray = [
-	/* 0 */ () => { this.state = "IDLE"; },
+	/* 0 */ () => { this.state = "FIRST_TIME"; },
 	/* 1 */ () => { this.time = this.event.data; this.state = "TIMING"; },
         /* 2 */ () => { this.killTimer (); this.state = "IDLE";},
 	/* 3 */ () => { kernel.send(this, {pin: "timeout", data: true}); this.state = "IDLE";},
 	/* 4 */ () => { this.killTimer (); this.state = "TIMING"; },
-	/* 5 */ () => { this.state = "IDLE"; }
+	/* 5 */ () => { this.state = "IDLE"; },
+	/* 6 */ () => { this.state = "IDLE"; }
     ];
 
     this.exitCollection = [];
 
     this.entryCollection = [
 	{ state : "IDLE", func: () => { kernel.send (this, {pin: "sync", data: true}); this.state = "IDLE"; }},
-	{ state : "TIMING", code: () => { this.startTimer (); this.state = "TIMING"; }}
+	{ state : "TIMING", func: () => { this.startTimer (); this.state = "TIMING"; }}
     ];
 
     this.lookupAndCall = function (stateName, collection) {
@@ -75,6 +77,12 @@ function TimeoutTimer (id, name) {
 	    } else {
 		throw "INTERNAL ERROR";
 	    };
+	} else if (this.state == "FIRST_TIME") {
+	    if (AGevent.pin == "stop") {
+		this.transitionFunction (6);
+	    } else {
+		throw "INTERNAL ERROR";
+	    }
 	} else if (this.state == "-no-state-") {
 	} else {
 	    throw "INTERNAL ERROR";
@@ -85,7 +93,14 @@ function TimeoutTimer (id, name) {
     this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true})};
     this.sendSync = () => { kernel.send (this, {pin: "sync", data: true}) };
     this.killTimer = () => {};
-    this.startTimer = () => { setTimeout, () => { this.react ({pin: "timeout", data: true})}};
+    this.startTimer = () => { 
+	setTimeout(
+	    () => {
+		this.react ({pin: "timeout", data: true});
+		kernel.io ();
+	    },
+	    this.time);
+    };
 
     this.state = "-no-state-";
     this.transitionFunction (0); /* take default transition */

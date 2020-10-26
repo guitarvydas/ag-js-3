@@ -28,7 +28,7 @@ function FileSelector (id, name) {
     this.react = function () { // called from JS, hence, no parameters
         var fileDescriptor = document.getElementById(this.id).files[0];
 	kernel.debug (this, "");
-        kernel.send (this, {pin: 'changed', data: fileDescriptor});
+        kernel.send (this, {pin: 'changed', data: {name: fileDescriptor.name, descriptor: fileDescriptor}});
         kernel.io ();
     };
 };

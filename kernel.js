@@ -6,10 +6,8 @@ function Wire (wobject) {
     this.lockReceivers = function () { // implement if using multi-tasking or bare-metal
 	// disable preemption
 	// this.receivers.forEach (lock);
-	// enable preemption
     };
     this.unlockReceivers = function () { // implement if using multi-tasking or bare-metal
-	// disable preemption
 	// this.receivers.forEach (unlock);
 	// enable preemption
     };
@@ -21,7 +19,9 @@ function Wire (wobject) {
 	    this.receivers.forEach(
 		function (r) {
 		    var pin = r.pin;
-		    r.part.inputQueue.push ( {pin, data} );
+		    console.log ("   deliver to " + pin);
+		    r.part.inputQueue.push ( {pin: pin, data: data} );
+		    console.log ("   inq len " + r.part.inputQueue.length);
 		})
 	    this.unlockReceivers ();
 	}
@@ -42,22 +42,33 @@ function Kernel () {
 	throw "can't find wire for {" + senderPart.name + ", " + senderPin + "} in " + schematic.name;
     };
     
+    // the kernel has two phases 1. INITIALIZING and 2. STEADY_STATE
+    this.phase = "INITIALIZING"
+    this.deferredEventQueue = [];
+
     this.send = function (part, outputEvent) {
-	var outputPin = outputEvent.pin; 
-	var outputData = outputEvent.data;
-	var parentSchematic = part.parent;
-	var outputWire = this.findWire (part.parent, part, outputPin);
-	outputWire.deliver (outputData);
+	if (this.phase != "INITIALIZING") {
+	    var outputPin = outputEvent.pin; 
+	    var outputData = outputEvent.data;
+	    var parentSchematic = part.parent;
+	    var outputWire = this.findWire (part.parent, part, outputPin);
+	    outputWire.deliver (outputData);
+	} else {
+	    this.deferredEventQueue.push({part: part, event: outputEvent});
+	}
     };
     
     this.io = function () {
 	this.dispatch ();
     };
-
+    
     this.dispatch = function () {
-	while (this.topPart.hasInputs()) {
-	    this.topPart.consumeOneEventIfReady();
+	if (this.phase != "INITIALIZING") {
+	    while (this.topPart.hasInputs()) {
+		this.topPart.consumeOneEventIfReady();
+	    }
 	}
+	console.log ("  K exit dispatch");
     };
 
     this.debug = function (part, event) {
@@ -68,7 +79,16 @@ function Kernel () {
 	}
     };
 
-    this.initilialize = (topPart) => { this.top = topPart; };
+    this.initialize = (topPart) => { 
+	this.topPart = topPart; 
+	this.phase = "STEADY_STATE";
+	// release events that were deferred during initialization
+	while (0 < this.deferredEventQueue.length) {
+	    var event = this.deferredEventQueue.pop();
+	    this.send (event.part, event.event);
+	}
+	this.io ();
+    };
 };
 
 
