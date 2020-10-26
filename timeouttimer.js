@@ -84,9 +84,9 @@ function TimeoutTimer (id, name) {
     
     this.sendTimeout = () => { kernel.send (this, {pin: "timeout", data: true})};
     this.sendSync = () => { console.log("...send timer sync"); kernel.send (this, {pin: "sync", data: true}) };
-    this.killTimer = () => {};
+    this.killTimer = () => { clearTimeout(this.var_timeout); };
     this.startTimer = () => { 
-	setTimeout(
+	this.var_timeout = setTimeout(
 	    () => {
 		this.react ({pin: "timeout", data: true});
 		kernel.io ();

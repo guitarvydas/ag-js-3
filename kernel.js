@@ -51,6 +51,7 @@ function Kernel () {
 	    var parentSchematic = part.parent;
 	    var outputWire = this.findWire (part.parent, part, outputPin);
 	    outputWire.deliver (outputData);
+	    console.log ("sent {" + part.name + ", " + outputPin + "}");
 	} else {
 	    this.deferredEventQueue.push({part: part, event: outputEvent});
 	}

@@ -24,6 +24,7 @@ function Display (id, name) {
 	    var filename = AGevent.data.filename;
 	    var contents = AGevent.data.contents;
 	    var element = document.getElementById(this.id);
+	    console.log ("display " + filename);
 	    document.getElementById(this.id).innerHTML =
 		"FILE REQUESTED: " + filename +
 		"<BR>FILE CONTENTS (example 3):<BR>" + contents;
